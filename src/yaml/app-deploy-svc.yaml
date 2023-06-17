@@ -1,0 +1,52 @@
+# Spring App Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kubedemo-spring-app
+spec:
+  selector:
+    matchLabels:
+      run: kubedemo-spring-app
+  replicas: 4
+  template:
+    metadata:
+      labels:
+        run: kubedemo-spring-app
+    spec:
+      containers:
+        - name: kubedemo-spring-app
+          image: ankuratdocker/kubedemo-spring-app:v1
+          ports:
+            - containerPort: 8080
+              protocol: TCP
+          env:
+            - name: PG_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: postgres-config
+                  key: dbUser
+
+            - name: PG_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: password
+
+---
+# Spring App Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: kubedemo-spring-app-service
+  annotations:
+    cloud.google.com/l4-rbs: "enabled"
+spec:
+  ports:
+    - name: tcp-port
+      protocol: TCP
+      port: 8080
+      targetPort: 8080
+  selector:
+    run: kubedemo-spring-app
+  type: LoadBalancer
+  externalTrafficPolicy: Cluster

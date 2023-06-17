@@ -1,0 +1,86 @@
+# Persistence Volume Claim Definition
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-pv-claim
+  labels:
+    app: postgres
+    tier: database
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+# Postgres Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+  labels:
+    app: postgres
+    tier: database
+spec:
+  selector:
+    matchLabels:
+      app: postgres
+      tier: database
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: postgres
+        tier: database
+    spec:
+      containers:
+        - image: postgres:15.3-alpine
+          name: postgres
+          env:
+            - name: POSTGRES_PASSWORD
+              valueFrom :
+                secretKeyRef :
+                  name : postgres-secret
+                  key :  password
+
+            - name: POSTGRES_USER
+              valueFrom :
+                configMapKeyRef :
+                  name : postgres-config
+                  key :  dbUser
+
+            - name: POSTGRESS_DB
+              valueFrom :
+                configMapKeyRef :
+                  name : postgres-config
+                  key : dbName
+
+          ports:
+            - containerPort: 5432
+              name: postgres
+          volumeMounts:
+            - name: postgres-persistent-storage
+              mountPath: /var/lib/postgresql/data
+              subPath: pgdata
+      volumes:
+        - name: postgres-persistent-storage
+          persistentVolumeClaim:
+            claimName: postgres-pv-claim
+---
+# Postgres Service Definition
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  labels:
+    app: postgres
+    tier: database
+spec:
+  ports:
+    - port: 5432
+      targetPort: 5432
+  selector:
+    app: postgres
+    tier: database
+  clusterIP: None
