@@ -1,5 +1,5 @@
 # Kubedemo
-Demo app using Spring Boot, Postgres SQL and Kubernetes
+An app using Spring Boot, Postgres database and Kubernetes. The data in the postgres database is added by running SQL commands in psql console. The frontend app only fetches the data from postgres through JPA.
 
 ## Repository url
 https://github.com/ditankur/kubedemo
